@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.2.1] - 2016-08-07
+### Added
+* Unix installer
+* Unit tests via "test_genhosts.py"
+
 ## [0.2.0] - 2016-02-07
 ### Added
 * Created a change log

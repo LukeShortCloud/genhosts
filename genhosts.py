@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Version: 0.2.0
+# Version: 0.2.1
 # Author: ekultails@gmail.com
 # URL: https://github.com/ekultails
 
@@ -10,16 +10,45 @@ from re import search
 from sys import argv, exit, version_info
 import urllib
 
-
 class GenHosts:
 
+
+    def filedownload(self, url, filename):
+
+        # compatibility fixes ensure that Python can easily download files
+        # using both Python versions 2 or 3
+        if version_info[:1] == (2,):
+        
+            try:
+                urllib.urlretrieve(url, filename)
+            except NameError:
+                pass
+
+        elif version_info[:1] == (3,):
+            
+            try:
+                urllib.request.urlretrieve(url, filename)
+            except NameError:
+                pass
+
+        else:
+            print("Unsupported Python version. Please use 2.x or 3.x")
+            return False
+
+        return True
+
+    def validate_ipv4(self, ipv4address):
+
+        if search('[0-9]+\.+[0-9]+\.+[0-9]+\.+[0-9]+', ipv4address):
+            return True
+        else:
+            return False 
 
     def get_hosts(self, url, save_file):
     
         # create an empty list for storing ad hosting domains
         domains_list = []
-
-        filedownload(url, save_file)
+        self.filedownload(url, save_file)
         open_file = open(save_file, "r")
         
         for line in open_file:
@@ -39,7 +68,7 @@ class GenHosts:
             if regex_domains_search:
                 domains_list.append(regex_domains_search.group())
 
-        # close the hosts file we were readying
+        # close the hosts file we were reading
         open_file.close()
         # clean-up, delete the downloaded hosts file
         remove(save_file)
@@ -95,31 +124,8 @@ class GenHosts:
 if __name__ == "__main__":
 
 
-    # compatibility fixes ensure that Python can easily download files
-    # using both Python versions 2 or 3
-    if version_info[:1] == (2,):
-    
-        try:
-            from urllib import urlretrieve
-            def filedownload(url, filename):
-                urllib.urlretrieve(url, filename)
-        except NameError:
-            pass
 
-    elif version_info[:1] == (3,):
-        
-        try:
-            from urllib import request
-            def filedownload(url, filename):
-                urllib.request.urlretrieve(url, filename)
-        except NameError:
-            pass
-
-    else:
-        print("Unsupported Python version. Please use 2.x or 3.x")
-        exit(1)
-
-    hostsObj = GenHosts()
+    GenHostsObj = GenHosts()
     # format:
     # {"http://url_name_here.tld": "/tmp/save_file_name.txt"}
     url_hosts = {}
@@ -150,7 +156,7 @@ if __name__ == "__main__":
             print("Usage: genhosts -s {dnsmasq|unbound|unix|windows} <IP address>"
                   " -u <URL>\n"
                   "-s, --server\tspecify DNS/hosts server as \"dnsmasq\", \"unbound\", \"unix\", \"windows\"\n"
-                 "-u, --url\tprovide a list of comma seperated URLs of hosts files")
+                  "-u, --url\tprovide a list of comma seperated URLs of hosts files")
         elif argv[counter] == "-s" or argv[counter] == "--server":
             counter += 1
             dns_server = argv[counter]
@@ -160,8 +166,8 @@ if __name__ == "__main__":
             if counter + 1 >= len(argv):
                 ipaddr = "127.0.0.1"
                 continue
-            elif search('[0-9]+\.+[0-9]+\.+[0-9]+\.+[0-9]+', argv[counter + 1]):
-                ipv4_found = True
+            else:
+                ipv4_found = GenHostsObj.validate_ipv4(argv[counter + 1])
 
             if ipv4_found == True:
                 ipaddr = argv[counter + 1]
@@ -171,7 +177,7 @@ if __name__ == "__main__":
             url_hosts = argv[counter + 1].split(",")
 
         elif argv[counter] == "-v" or argv[counter] == "--version":
-            print("GenHosts 0.2.0") 
+            print("GenHosts 0.2.1") 
 
         counter += 1
     
@@ -184,11 +190,10 @@ if __name__ == "__main__":
         url_split = url.split("/")
         url_length = len(url_split)
         save_file = url_split[url_length - 1]
-
-        domains_list = hostsObj.get_hosts(url, save_file)
+        domains_list = GenHostsObj.get_hosts(url, save_file)
         
         try: 
-            host_dns_entries = hostsObj.gen_hosts(dns_server, domains_list, ipaddr)
+            host_dns_entries = GenHostsObj.gen_hosts(dns_server, domains_list, ipaddr)
         except:
             print("Invalid or missing arguments. Please use \"--help\" to see valid entries.")
             exit(1)       
